@@ -8,6 +8,7 @@ namespace OopsLogical
 {
     public class Contacts
     {
+        
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public long PhoneNo { get; set; }
@@ -16,5 +17,11 @@ namespace OopsLogical
         public string City { get; set; }
         public string State { get; set; }
         public int Zip { get; set; }
+
+        public override bool Equals(object obj)
+        {
+            Contacts other = (Contacts)obj;
+            return this.FirstName == other.FirstName;
+        }
     }
 }
