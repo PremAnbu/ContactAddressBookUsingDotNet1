@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
+using System.Data;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
@@ -10,12 +12,12 @@ namespace OopsLogical
 {
     interface DeleteContact
     {
-        HashSet<Contacts> deleteContact(HashSet<Contacts> lContact);
+        HashSet<Contacts> deleteContact(HashSet<Contacts> lContact,SqlConnection conn);
 
     }
     public class ContactDelete : DeleteContact
     {
-        public HashSet<Contacts> deleteContact(HashSet<Contacts> lContact)
+        public HashSet<Contacts> deleteContact(HashSet<Contacts> lContact,SqlConnection conn)
         {
             Console.WriteLine("Enter First Name which person details want to delete");
             string first = Console.ReadLine();
@@ -49,12 +51,24 @@ namespace OopsLogical
                 }
             }
             if (cont != null) {
+                DeleteEmployeeDetailsByName(conn,first,last);
                 lContact.Remove(cont);
                 Console.WriteLine("Contact Deleted");
             }
             else
                 Console.WriteLine("Contact NOt present");
             return lContact;
+        }
+        public static void DeleteEmployeeDetailsByName(SqlConnection conn ,string Fname,string Lname)
+        {
+            SqlCommand cmd = new SqlCommand("spDeleteContactDetailByName", conn);
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.AddWithValue("@Fname", Fname);
+            cmd.Parameters.AddWithValue("@Lname", Lname);
+            conn.Open();
+            int rowsAffected = cmd.ExecuteNonQuery();
+            conn.Close();
+            Console.WriteLine($"{rowsAffected} row(s) deleted.");
         }
     }
 }

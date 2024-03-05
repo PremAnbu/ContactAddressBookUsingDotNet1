@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -9,11 +11,11 @@ namespace OopsLogical
 {
     interface UpdateContact
     {
-        HashSet<Contacts> updateContact(HashSet<Contacts> lContact);
+        HashSet<Contacts> updateContact(HashSet<Contacts> lContact, SqlConnection conn);
     }
     class ContactUpdate : UpdateContact
     {
-        public HashSet<Contacts> updateContact(HashSet<Contacts> lContact)
+        public HashSet<Contacts> updateContact(HashSet<Contacts> lContact, SqlConnection conn)
         {
             Contacts cont = null;
             string firstRegex = "[A-Z]{1}[a-zA-Z]{0,20}";
@@ -170,6 +172,22 @@ namespace OopsLogical
             {
                 cont.FirstName = first; cont.LastName = last; cont.PhoneNo = phno; cont.Email = email;
                 cont.Address = address; cont.City = city; cont.State = state; cont.Zip = zip;
+
+                SqlCommand cmd = new SqlCommand("spUpdateContactDetailsById", conn);
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@FnameUp", firstup);
+                cmd.Parameters.AddWithValue("@Fname", first);
+                cmd.Parameters.AddWithValue("@Lname", last);
+                cmd.Parameters.AddWithValue("@phno", phno);
+                cmd.Parameters.AddWithValue("@email", email);
+                cmd.Parameters.AddWithValue("@address",address);
+                cmd.Parameters.AddWithValue("@city", city);
+                cmd.Parameters.AddWithValue("@state", state);
+                cmd.Parameters.AddWithValue("@zip", zip);
+                conn.Open();
+                int rowsAffected = cmd.ExecuteNonQuery();
+                conn.Close();
+                Console.WriteLine($"{rowsAffected} row(s) updated.");
                 Console.WriteLine("Contact Detail Updated");
             }
             return lContact;

@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -9,14 +11,14 @@ namespace OopsLogical
 {
     interface AddContacts
     {
-        HashSet<Contacts> addContact(HashSet<Contacts> lContact);
+        HashSet<Contacts> addContact(HashSet<Contacts> lContact,SqlConnection conn);
     }
     public class AddContactDetails : AddContacts
     {
-        public HashSet<Contacts> addContact(HashSet<Contacts> lContact)
+        public HashSet<Contacts> addContact(HashSet<Contacts> lContact, SqlConnection conn)
         {
             Console.WriteLine("Enter Adderss Book Details");
- 
+
             Contacts cont = null;
             string firstRegex = "[A-Z]{1}[a-zA-Z]{0,20}";
             string lastRegex = "[a-zA-Z]";
@@ -26,12 +28,12 @@ namespace OopsLogical
             string stateRegex = "[a-zA-Z]{3,20}";
             string zipRegex = @"\d{6}";
 
-            bool check=true;
+            bool check = true;
             Console.WriteLine("Enter First Name");
             string first = Console.ReadLine();
             try
             {
-                if (!Regex.IsMatch(first, firstRegex)) 
+                if (!Regex.IsMatch(first, firstRegex))
                 {
                     check = false;
                     throw new InvalidNameException("Invalid Name Please Enter valid Detail !!!");
@@ -61,7 +63,7 @@ namespace OopsLogical
             long phno = long.Parse(Console.ReadLine());
             try
             {
-                if (!Regex.IsMatch(phno +"", phnoRegex))
+                if (!Regex.IsMatch(phno + "", phnoRegex))
                 {
                     check = false;
                     throw new InvalidPhoneNumberException("Invalid PhoneNumber Please Enter valid Detail !!!");
@@ -69,7 +71,7 @@ namespace OopsLogical
             }
             catch (InvalidPhoneNumberException ex)
             {
-                Console.WriteLine("Error  : " + ex.Message); 
+                Console.WriteLine("Error  : " + ex.Message);
                 return lContact;
             }
             Console.WriteLine("Enter Email");
@@ -138,26 +140,59 @@ namespace OopsLogical
             //{
             //    Console.WriteLine("Invalid Contact Address Detail: " + ex.Message);
             //}
-            if (check==false){
+            if (check == false)
+            {
                 Console.WriteLine("Please Enter correct AddressBook Details-----------------");
                 return lContact;
             }
-            foreach (var contact in lContact)  {
+            foreach (var contact in lContact)
+            {
                 if (contact.FirstName.Equals(first) || contact.PhoneNo == phno
-                     || contact.Email.Equals(email))  {
-                        cont = contact;
-                        break;
+                     || contact.Email.Equals(email))
+                {
+                    cont = contact;
+                    break;
                 }
             }
-            if (cont == null) {
-                lContact.Add(new Contacts { FirstName = first, LastName = last, PhoneNo = phno, Email = email, Address = address,
-                    City = city, State = state, Zip = zip
-                });
+            if (cont == null)
+            {
+                Contacts contactInsert=new Contacts
+                {
+                    FirstName = first,
+                    LastName = last,
+                    PhoneNo = phno,
+                    Email = email,
+                    Address = address,
+                    City = city,
+                    State = state,
+                    Zip = zip
+
+                };
+                lContact.Add(contactInsert);
+                InsertEmployeeDetails(contactInsert,conn);
                 Console.WriteLine("Contact Address Successfully Added");
             }
             else
                 Console.WriteLine("This User Address Already present please enter new Details");
             return lContact;
+        }
+
+        public static void InsertEmployeeDetails(Contacts con,SqlConnection conn)
+        {
+            SqlCommand cmd = new SqlCommand("spInsertContactDetails", conn);
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.AddWithValue("@Fname", con.FirstName);
+            cmd.Parameters.AddWithValue("@lname", con.LastName);
+            cmd.Parameters.AddWithValue("@phno",con.PhoneNo );
+            cmd.Parameters.AddWithValue("@email", con.Email);
+            cmd.Parameters.AddWithValue("@address", con.Address);
+            cmd.Parameters.AddWithValue("@city", con.City);
+            cmd.Parameters.AddWithValue("@state", con.State);
+            cmd.Parameters.AddWithValue("@zip", con.Zip);
+            conn.Open();
+            int rowsAffected = cmd.ExecuteNonQuery();
+            conn.Close();
+            Console.WriteLine($"{rowsAffected} row(s) inserted.");
         }
     }
 }

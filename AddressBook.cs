@@ -4,6 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using System.Data.SqlClient;
+using System.Data;
+//using System.Data.;
+
 
 namespace OopsLogical
 {
@@ -11,59 +15,61 @@ namespace OopsLogical
     {
         public static void Main(string[] args)
         {
-            string path = "C:\\DotNet\\OopsLogical\\OopsLogical\\AddressBookObjects.csv";
-           // File.WriteAllText(path, String.Empty);
-            if (!File.Exists(path))
-                File.CreateText(path);
-            List<string> lines = File.ReadAllLines(path).ToList();
             HashSet<Contacts> contacts = new HashSet<Contacts>();
-            try
-            {
-                if (lines.Count > 0)
-                {
-                    foreach (string line in lines)
-                    {
-                        string[] values = line.Split(',');
-                        Contacts contact = new Contacts
-                        {
-                            FirstName = values[0],LastName = values[1],PhoneNo = long.Parse(values[2]),Email = values[3],
-                            Address = values[4],City = values[5],State = values[6],Zip = int.Parse(values[7])
-                        };
-                        contacts.Add(contact);
-                    }
-                }
-                else
-                    Console.WriteLine("File is empty.");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error: {ex.Message}");
-            }
+            string path = "server=PREMKUMAR\\SQLEXPRESS; Initial Catalog = AddressBooks; Integrated Security = SSPI";
+            SqlConnection conn = new SqlConnection(path);
+            
+
             while (true)
             {
                 Console.WriteLine("Enter \n 1.Add Person Details in Address Book" +
                 "\n 2.Update Person Details in Address Book \n 3.Delete Person Details in Address Book" +
                 "\n 4.Display Details");
-                int choice = int.Parse(Console.ReadLine());
-                switch (choice)
+                SqlCommand cmd = new SqlCommand("spGetContactDetails", conn);
+                cmd.CommandType = CommandType.StoredProcedure;
+                conn.Open();
+                SqlDataReader values = cmd.ExecuteReader();
+                while (values.Read())
+                {
+                    if (!values.IsDBNull(0))
+                    {
+                        Contacts contact = new Contacts
+                        {
+                            FirstName = values.GetString(1),
+                            LastName = values.GetString(2),
+                            PhoneNo = values.GetInt64(3),
+                            Email = values.GetString(4),
+                            Address = values.GetString(5),
+                            City = values.GetString(6),
+                            State = values.GetString(7),
+                            Zip = values.GetInt32(8)
+                        };
+                        contacts.Add(contact);
+                    }
+                }
+                conn.Close();
+                switch (int.Parse(Console.ReadLine()))
                 {
                     case 1:
                         AddContacts addContacts = new AddContactDetails();
-                        addContacts.addContact(contacts);
+                        addContacts.addContact(contacts, conn);
                         break;
                     case 2:
                         UpdateContact contactPerson = new ContactUpdate();
-                        contactPerson.updateContact(contacts); break;
+                        contactPerson.updateContact(contacts,conn); break;
                     case 3:
                         DeleteContact contactPerson1 = new ContactDelete();
-                        contactPerson1.deleteContact(contacts); break;
+                        contactPerson1.deleteContact(contacts,conn); break;
                     case 4:
-                        foreach (Contacts c in contacts)
+                        SqlCommand scmd = new SqlCommand("spGetContactDetails", conn);
+                        scmd.CommandType = CommandType.StoredProcedure;
+                        conn.Open();
+                        SqlDataReader sr = scmd.ExecuteReader();
+                        while (sr.Read())
                         {
-                            Console.WriteLine($"FirstName : {c.FirstName}, LastName : {c.LastName}," +
-                                $"PhoneNo : {c.PhoneNo}, Email : {c.Email}, Address : {c.City}," +
-                                $"State : {c.State}, Zip : {c.Zip}");
+                            Console.WriteLine(sr[0] + "  " + sr[1] + "  " + sr[2] + "  " + sr[3] + "  " + sr[4] + "  " + sr[5] + "  " + sr[6] + "  " + sr[7] + "  " + sr[8]);
                         }
+                        conn.Close();
                         break;
                     default:
                         Console.WriteLine("Invalid input");
@@ -73,28 +79,7 @@ namespace OopsLogical
                 if (Console.ReadLine().ToLower() != "y")
                     break;
             }
-            StreamWriter s = null;
-            try
-            {
-                s = new StreamWriter(path, append: false);
-                s.AutoFlush = true;
-               // if (lines.Count == 0)
-                //   lines.Add("FirstName,LastName,PhoneNo,Email,Address,City,State,Zip");
-                foreach (var item in contacts)
-                {
-                    s.WriteLine($"{item.FirstName},{item.LastName},{item.PhoneNo},{item.Email},{item.Address},{item.City},{item.State},{item.Zip}");
-                }
-                Console.WriteLine("Employee data saved to CSV file.");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error: {ex.Message}");
-            }
-            finally
-            {
-                if (s != null)
-                    s.Close();
-            }
+          
         } 
         
     }
